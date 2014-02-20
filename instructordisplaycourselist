@@ -1,0 +1,123 @@
+package com.example.bisonrta;
+
+import java.io.IOException;
+import java.util.ArrayList;
+
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.app.Activity;
+import android.content.Intent;
+import android.view.Menu;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.ArrayAdapter;
+import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.TextView;
+
+public class InstructorDisplayCourselist extends Activity implements IListener {
+
+	public static final String EXTRA_MESSAGE = null;
+	private ListView lv;
+	private static int flag = 0;
+	private Communication com = null;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_instructor_display_courselist);
+
+		com = new Communication(this);
+		com.connect();
+	}
+
+	public void createCourse(View view) {
+		flag = 1;
+		Intent createcourseintent = new Intent(getApplicationContext(),InstructorCreateCourse.class);
+		String user = username;
+		createcourseintent.putExtra(EXTRA_MESSAGE, user);
+		startActivity(createcourseintent);
+
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.instructor_display_courselist, menu);
+		return true;
+	}
+
+	String username;
+	String[] courselist;
+	ArrayList<String> course_list;
+
+	@Override
+	public void onConnect() throws IOException {
+		// TODO Auto-generated method stub
+		Intent intent2 = getIntent();		
+		
+		if(username == null)
+		{
+			username = intent2.getStringExtra(MainActivity.MESSAGE);
+		}		
+			
+		com.getCourseList(username);
+	}
+
+	@Override
+	public void onNewMessage(String a) {
+		// TODO Auto-generated method stub
+		Message msg = handler.obtainMessage();
+		msg.obj = this;
+		
+
+		courselist = a.split(",");
+
+		Message msg1 = handler.obtainMessage();
+		msg1.obj = courselist;
+		course_list = new ArrayList<String>();
+		for (int i = 0; i < courselist.length; i++) {
+			course_list.add(courselist[i]);
+		}
+
+		handler1.sendMessage(msg);
+	}
+
+	Handler handler = new Handler() {
+		public void handleMessage(Message msg) {
+			InstructorDisplayCourselist text = (InstructorDisplayCourselist) msg.obj;
+
+			Intent intent = new Intent(text, InstructorDisplayQuizlist.class);
+			startActivity(intent);
+		}
+	};
+
+	Handler handler1 = new Handler() {
+		public void handleMessage(Message msg1) {
+			
+
+			InstructorDisplayCourselist text = (InstructorDisplayCourselist) msg1.obj;
+
+			lv = (ListView) findViewById(R.id.listView1);
+
+			ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(text,
+					android.R.layout.simple_list_item_1, course_list);
+			lv.setAdapter(arrayAdapter);
+
+			lv.setOnItemClickListener(new OnItemClickListener() {
+				public void onItemClick(AdapterView<?> parent, View view,
+						int position, long id) {
+					Intent intent = new Intent(getApplicationContext(),
+							InstructorDisplayQuizlist.class);
+					String selectedCourse = ((TextView) view).getText()
+							.toString();
+					intent.putExtra(EXTRA_MESSAGE, selectedCourse);
+					startActivity(intent);
+				}
+			});
+		}
+	};
+
+}
